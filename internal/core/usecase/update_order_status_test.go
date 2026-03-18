@@ -24,6 +24,7 @@ func TestUpdateOrderStatus_WithTestify(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(MockOrderRepository)
+			publisher := new(MockEventPublisher)
 
 			order := &entity.Order{
 				ID:     "order_id",
@@ -35,18 +36,28 @@ func TestUpdateOrderStatus_WithTestify(t *testing.T) {
 			repo.On("UpdateStatus", "order_id", string(tt.toStatus)).
 				Return(nil)
 
+			publisher.On(
+				"PublishOrderStatusChanged",
+				mock.Anything,
+				mock.MatchedBy(func(e entity.OrderEvent) bool {
+					return e.OrderID == "order_id" &&
+						e.Status == tt.toStatus
+				}),
+			).Return(nil)
+
 			input := usecase.UpdateOrderStatusInput{
 				OrderID: "order_id",
 				Status:  string(tt.toStatus),
 			}
 
-			updatedOrder, err := usecase.UpdateOrderStatus(repo, input)
+			updatedOrder, err := usecase.UpdateOrderStatus(repo, publisher, input)
 
 			assert.NoError(t, err)
 			assert.NotNil(t, updatedOrder)
 			assert.Equal(t, tt.toStatus, updatedOrder.Status)
 
 			repo.AssertExpectations(t)
+			publisher.AssertCalled(t, "PublishOrderStatusChanged", mock.Anything, mock.Anything)
 		})
 	}
 }
@@ -69,20 +80,23 @@ func TestUpdateOrderStatus_InvalidInput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(MockOrderRepository)
+			publisher := new(MockEventPublisher)
 
-			order, err := usecase.UpdateOrderStatus(repo, tt.input)
+			order, err := usecase.UpdateOrderStatus(repo, publisher, tt.input)
 
 			assert.Error(t, err)
 			assert.Nil(t, order)
 
 			repo.AssertNotCalled(t, "FindByID", mock.Anything)
 			repo.AssertNotCalled(t, "UpdateStatus", mock.Anything, mock.Anything)
+			publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything, mock.Anything)
 		})
 	}
 }
 
 func TestUpdateOrderStatus_OrderNotFound(t *testing.T) {
 	repo := new(MockOrderRepository)
+	publisher := new(MockEventPublisher)
 
 	repo.On("FindByID", "order_id").
 		Return(nil, errors.New("Pedido não encontrado"))
@@ -92,16 +106,18 @@ func TestUpdateOrderStatus_OrderNotFound(t *testing.T) {
 		Status:  string(entity.OrderProcessing),
 	}
 
-	order, err := usecase.UpdateOrderStatus(repo, input)
+	order, err := usecase.UpdateOrderStatus(repo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, order)
 
 	repo.AssertNotCalled(t, "UpdateStatus", mock.Anything, mock.Anything)
+	publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything, mock.Anything)
 }
 
 func TestUpdateOrderStatus_InvalidTransition(t *testing.T) {
 	repo := new(MockOrderRepository)
+	publisher := new(MockEventPublisher)
 
 	order := &entity.Order{
 		ID:     "order_id",
@@ -115,16 +131,18 @@ func TestUpdateOrderStatus_InvalidTransition(t *testing.T) {
 		Status:  string(entity.OrderDelivered),
 	}
 
-	updatedOrder, err := usecase.UpdateOrderStatus(repo, input)
+	updatedOrder, err := usecase.UpdateOrderStatus(repo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, updatedOrder)
 
 	repo.AssertNotCalled(t, "UpdateStatus", mock.Anything, mock.Anything)
+	publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything, mock.Anything)
 }
 
 func TestUpdateOrderStatus_UpdateError(t *testing.T) {
 	repo := new(MockOrderRepository)
+	publisher := new(MockEventPublisher)
 
 	order := &entity.Order{
 		ID:     "order_id",
@@ -141,7 +159,7 @@ func TestUpdateOrderStatus_UpdateError(t *testing.T) {
 		Status:  string(entity.OrderShipped),
 	}
 
-	updatedOrder, err := usecase.UpdateOrderStatus(repo, input)
+	updatedOrder, err := usecase.UpdateOrderStatus(repo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, updatedOrder)
