@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/salobato/ordermanager/internal/core/entity"
+	"github.com/salobato/ordermanager/internal/core/publisher"
 	"github.com/salobato/ordermanager/internal/core/repository"
 )
 
@@ -12,7 +14,7 @@ type UpdateOrderStatusInput struct {
 	Status  string
 }
 
-func UpdateOrderStatus(repo repository.OrderRepository, input UpdateOrderStatusInput) (*entity.Order, error) {
+func UpdateOrderStatus(repo repository.OrderRepository, pub publisher.EventPublisher, input UpdateOrderStatusInput) (*entity.Order, error) {
 	if input.OrderID == "" {
 		return nil, fmt.Errorf("O ID do pedido não pode ser vazio")
 	}
@@ -32,6 +34,15 @@ func UpdateOrderStatus(repo repository.OrderRepository, input UpdateOrderStatusI
 	}
 
 	if err := repo.UpdateStatus(order.ID, string(order.Status)); err != nil {
+		return nil, err
+	}
+
+	err = pub.PublishOrderStatusChanged(context.Background(), entity.OrderEvent{
+		OrderID:     order.ID,
+		OrderNumber: order.OrderNumber.String(),
+		Status:      order.Status,
+	})
+	if err != nil {
 		return nil, err
 	}
 
