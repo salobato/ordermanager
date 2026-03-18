@@ -1,9 +1,23 @@
 package usecase_test
 
 import (
+	"context"
+
 	"github.com/salobato/ordermanager/internal/core/entity"
 	"github.com/stretchr/testify/mock"
 )
+
+type MockEventPublisher struct {
+	mock.Mock
+}
+
+func (m *MockEventPublisher) PublishOrderStatusChanged(
+	ctx context.Context,
+	event entity.OrderEvent,
+) error {
+	args := m.Called(ctx, event)
+	return args.Error(0)
+}
 
 type MockOrderRepository struct {
 	mock.Mock

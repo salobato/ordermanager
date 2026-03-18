@@ -13,6 +13,7 @@ import (
 
 func TestPlaceOrder_WithTestify(t *testing.T) {
 	repo := new(MockOrderRepository)
+	publisher := new(MockEventPublisher)
 
 	repo.On("NextSequence").Return(int64(1), nil)
 
@@ -29,12 +30,21 @@ func TestPlaceOrder_WithTestify(t *testing.T) {
 		Status:      entity.OrderCreated,
 	}, nil)
 
+	publisher.On(
+		"PublishOrderStatusChanged",
+		mock.Anything,
+		mock.MatchedBy(func(e entity.OrderEvent) bool {
+			return e.OrderID == "mongo_id" &&
+				e.Status == entity.OrderCreated
+		}),
+	).Return(nil)
+
 	input := usecase.PlaceOrderInput{
 		CustomerID: "customer_id",
 		Total:      299.90,
 	}
 
-	order, err := usecase.PlaceOrder(repo, input)
+	order, err := usecase.PlaceOrder(repo, publisher, input)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, order)
@@ -42,6 +52,7 @@ func TestPlaceOrder_WithTestify(t *testing.T) {
 	assert.True(t, order.OrderNumber.IsValid())
 
 	repo.AssertExpectations(t)
+	publisher.AssertCalled(t, "PublishOrderStatusChanged", mock.Anything, mock.Anything)
 }
 
 func TestPlaceOrder_InvalidInput(t *testing.T) {
@@ -66,19 +77,22 @@ func TestPlaceOrder_InvalidInput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(MockOrderRepository)
+			publisher := new(MockEventPublisher)
 
-			order, err := usecase.PlaceOrder(repo, tt.input)
+			order, err := usecase.PlaceOrder(repo, publisher, tt.input)
 
 			assert.Error(t, err)
 			assert.Nil(t, order)
 			repo.AssertNotCalled(t, "NextSequence")
 			repo.AssertNotCalled(t, "Save", mock.Anything)
+			publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything)
 		})
 	}
 }
 
 func TestPlaceOrder_SequenceError(t *testing.T) {
 	repo := new(MockOrderRepository)
+	publisher := new(MockEventPublisher)
 
 	repo.On("NextSequence").Return(int64(0), errors.New("sequence error"))
 
@@ -87,27 +101,29 @@ func TestPlaceOrder_SequenceError(t *testing.T) {
 		Total:      100,
 	}
 
-	order, err := usecase.PlaceOrder(repo, input)
+	order, err := usecase.PlaceOrder(repo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, order)
 
 	repo.AssertNotCalled(t, "Save", mock.Anything)
+	publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything)
 }
 
 func TestPlaceOrder_RepositoryError(t *testing.T) {
 	repo := new(MockOrderRepository)
+	publisher := new(MockEventPublisher)
 
 	repo.On("NextSequence").Return(int64(1), nil)
 	repo.On("Save", mock.Anything).
-		Return((*entity.Order)(nil), errors.New("db error"))
+		Return((*entity.Order)(nil), errors.New("Erro no banco de dados"))
 
 	input := usecase.PlaceOrderInput{
 		CustomerID: "customer_id",
 		Total:      100,
 	}
 
-	order, err := usecase.PlaceOrder(repo, input)
+	order, err := usecase.PlaceOrder(repo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, order)
