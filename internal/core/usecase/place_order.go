@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 
 	"github.com/salobato/ordermanager/internal/core/entity"
+	"github.com/salobato/ordermanager/internal/core/publisher"
 	"github.com/salobato/ordermanager/internal/core/repository"
 )
 
@@ -22,7 +24,7 @@ func (i PlaceOrderInput) Validate() error {
 	return nil
 }
 
-func PlaceOrder(r repository.OrderRepository, input PlaceOrderInput) (*entity.Order, error) {
+func PlaceOrder(r repository.OrderRepository, p publisher.EventPublisher, input PlaceOrderInput) (*entity.Order, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
@@ -38,6 +40,16 @@ func PlaceOrder(r repository.OrderRepository, input PlaceOrderInput) (*entity.Or
 	}
 
 	order, err := r.Save(entry)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.PublishOrderStatusChanged(context.Background(), entity.OrderEvent{
+		OrderID:     order.ID,
+		OrderNumber: order.OrderNumber.String(),
+		Status:      order.Status,
+	})
+
 	if err != nil {
 		return nil, err
 	}
