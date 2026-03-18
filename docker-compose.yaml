@@ -1,0 +1,35 @@
+services:
+  mongodb:
+    image: mongo:8.2.6
+    ports:
+      - "27017:27017"
+    environment:
+      - DATABASE=mongodb://mongo:27017/orderdev
+    volumes:
+      - mongo_data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:latest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      RABBITMQ_URI: amqp://guest:guest@rabbitmq:5672/
+      SERVER_PORT: 8080
+    depends_on:
+      - mongodb
+      - rabbitmq
+
+volumes:
+  mongo_data:

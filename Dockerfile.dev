@@ -1,0 +1,19 @@
+FROM golang:1.26.1-alpine
+
+WORKDIR /app
+
+# install git (needed for go install sometimes)
+RUN apk add --no-cache git
+
+# install air (hot reload tool)
+RUN go install github.com/air-verse/air@latest
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+# copy everything (will be overridden by volume anyway)
+COPY . .
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]
