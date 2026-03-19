@@ -24,12 +24,12 @@ func (i PlaceOrderInput) Validate() error {
 	return nil
 }
 
-func PlaceOrder(r repository.OrderRepository, p publisher.EventPublisher, input PlaceOrderInput) (*entity.Order, error) {
+func PlaceOrder(r repository.OrderRepository, cr repository.CounterRepository, p publisher.EventPublisher, input PlaceOrderInput) (*entity.Order, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
 
-	seq, err := r.NextSequence()
+	seq, err := cr.GetNextSequence("order_number")
 	if err != nil {
 		return nil, err
 	}

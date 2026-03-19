@@ -13,9 +13,10 @@ import (
 
 func TestPlaceOrder_WithTestify(t *testing.T) {
 	repo := new(MockOrderRepository)
+	counterRepo := new(MockCounterRepository)
 	publisher := new(MockEventPublisher)
 
-	repo.On("NextSequence").Return(int64(1), nil)
+	counterRepo.On("GetNextSequence").Return(int64(1), nil)
 
 	repo.On("Save", mock.MatchedBy(func(order *entity.Order) bool {
 		return order.CustomerID == "customer_id" &&
@@ -44,7 +45,7 @@ func TestPlaceOrder_WithTestify(t *testing.T) {
 		Total:      299.90,
 	}
 
-	order, err := usecase.PlaceOrder(repo, publisher, input)
+	order, err := usecase.PlaceOrder(repo, counterRepo, publisher, input)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, order)
@@ -77,13 +78,14 @@ func TestPlaceOrder_InvalidInput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(MockOrderRepository)
+			counterRepo := new(MockCounterRepository)
 			publisher := new(MockEventPublisher)
 
-			order, err := usecase.PlaceOrder(repo, publisher, tt.input)
+			order, err := usecase.PlaceOrder(repo, counterRepo, publisher, tt.input)
 
 			assert.Error(t, err)
 			assert.Nil(t, order)
-			repo.AssertNotCalled(t, "NextSequence")
+			counterRepo.AssertNotCalled(t, "GetNextSequence")
 			repo.AssertNotCalled(t, "Save", mock.Anything)
 			publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything)
 		})
@@ -92,16 +94,17 @@ func TestPlaceOrder_InvalidInput(t *testing.T) {
 
 func TestPlaceOrder_SequenceError(t *testing.T) {
 	repo := new(MockOrderRepository)
+	counterRepo := new(MockCounterRepository)
 	publisher := new(MockEventPublisher)
 
-	repo.On("NextSequence").Return(int64(0), errors.New("sequence error"))
+	counterRepo.On("GetNextSequence").Return(int64(0), errors.New("Erro ao gerar sequência"))
 
 	input := usecase.PlaceOrderInput{
 		CustomerID: "customer_id",
 		Total:      100,
 	}
 
-	order, err := usecase.PlaceOrder(repo, publisher, input)
+	order, err := usecase.PlaceOrder(repo, counterRepo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, order)
@@ -112,9 +115,10 @@ func TestPlaceOrder_SequenceError(t *testing.T) {
 
 func TestPlaceOrder_RepositoryError(t *testing.T) {
 	repo := new(MockOrderRepository)
+	counterRepo := new(MockCounterRepository)
 	publisher := new(MockEventPublisher)
 
-	repo.On("NextSequence").Return(int64(1), nil)
+	counterRepo.On("GetNextSequence").Return(int64(1), nil)
 	repo.On("Save", mock.Anything).
 		Return((*entity.Order)(nil), errors.New("Erro no banco de dados"))
 
@@ -123,7 +127,7 @@ func TestPlaceOrder_RepositoryError(t *testing.T) {
 		Total:      100,
 	}
 
-	order, err := usecase.PlaceOrder(repo, publisher, input)
+	order, err := usecase.PlaceOrder(repo, counterRepo, publisher, input)
 
 	assert.Error(t, err)
 	assert.Nil(t, order)
