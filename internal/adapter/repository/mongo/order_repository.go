@@ -80,7 +80,7 @@ func (r *OrderRepository) insert(ctx context.Context, order *entity.Order) (*ent
 	return &entity.Order{
 		ID:          model.ID.Hex(),
 		OrderNumber: entity.OrderNumber(model.OrderNumber),
-		CustomerID:  model.CustomerID.String(),
+		CustomerID:  model.CustomerID.Hex(),
 		Total:       model.Total,
 		Status:      entity.OrderStatus(model.Status),
 		PlacedAt:    model.PlacedAt,
@@ -135,7 +135,7 @@ func (r *OrderRepository) FindByID(id string) (*entity.Order, error) {
 	return &entity.Order{
 		ID:          model.ID.Hex(),
 		OrderNumber: entity.OrderNumber(model.OrderNumber),
-		CustomerID:  model.CustomerID.String(),
+		CustomerID:  model.CustomerID.Hex(),
 		Total:       model.Total,
 		Status:      entity.OrderStatus(model.Status),
 		PlacedAt:    model.PlacedAt,
