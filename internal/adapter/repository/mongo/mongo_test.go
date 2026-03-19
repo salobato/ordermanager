@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/salobato/ordermanager/internal/config"
+	"github.com/salobato/ordermanager/pkg/config"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )

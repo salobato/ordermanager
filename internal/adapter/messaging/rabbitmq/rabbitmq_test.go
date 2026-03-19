@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/salobato/ordermanager/internal/config"
+	"github.com/salobato/ordermanager/pkg/config"
 )
 
 func setupRabbitMQ(t *testing.T) *amqp.Channel {

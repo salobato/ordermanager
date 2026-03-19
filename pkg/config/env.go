@@ -6,14 +6,18 @@ import (
 )
 
 type Config struct {
-	MongoURI    string
-	RabbitMQURI string
+	MongoDatabase string
+	MongoURI      string
+	RabbitMQURI   string
+	Port          string
 }
 
 func Load() *Config {
 	cfg := &Config{
-		MongoURI:    getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		RabbitMQURI: getEnv("RABBITMQ_URI", "amqp://guest:guest@localhost:5672/"),
+		MongoDatabase: getEnv("MONGO_DATABASE", "orderenv"),
+		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		RabbitMQURI:   getEnv("RABBITMQ_URI", "amqp://guest:guest@localhost:5672/"),
+		Port:          getEnv("PORT", "8080"),
 	}
 
 	return cfg
