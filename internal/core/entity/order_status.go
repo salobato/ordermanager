@@ -42,7 +42,7 @@ func (s OrderStatus) CanTransitionTo(next OrderStatus) bool {
 
 func (o *Order) ChangeStatus(s OrderStatus) error {
 	if !o.Status.CanTransitionTo(s) {
-		return fmt.Errorf("O pedido não pode trocar de %s para %s", o.Status, s)
+		return fmt.Errorf("O pedido não pode avançar de %s para %s", o.Status, s)
 	}
 
 	o.Status = s
