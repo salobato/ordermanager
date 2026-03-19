@@ -26,7 +26,10 @@ func NewCounterRepository(db *mongo.Database) *CounterRepository {
 	}
 }
 
-func (r *CounterRepository) GetNextSequence(ctx context.Context, counterName string) (int64, error) {
+func (r *CounterRepository) GetNextSequence(counterName string) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	filter := bson.M{"_id": counterName}
 	update := bson.M{
 		"$inc": bson.M{"sequence": 1},
@@ -45,7 +48,10 @@ func (r *CounterRepository) GetNextSequence(ctx context.Context, counterName str
 	return result.Sequence, nil
 }
 
-func (r *CounterRepository) GetCurrentSequence(ctx context.Context, counterName string) (int64, error) {
+func (r *CounterRepository) GetCurrentSequence(counterName string) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	var result counter
 	err := r.collection.FindOne(ctx, bson.M{"_id": counterName}).Decode(&result)
 	if err != nil {

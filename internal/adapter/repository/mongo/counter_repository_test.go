@@ -1,7 +1,6 @@
 package mongo_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/salobato/ordermanager/internal/adapter/repository/mongo"
@@ -13,9 +12,7 @@ func TestCounterRepository_FirstSequence(t *testing.T) {
 	db := setupTestDB(t)
 	repo := mongo.NewCounterRepository(db)
 
-	ctx := context.Background()
-
-	seq, err := repo.GetNextSequence(ctx, "order_number")
+	seq, err := repo.GetNextSequence("order_number")
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), seq)
@@ -25,11 +22,9 @@ func TestCounterRepository_IncrementSequence(t *testing.T) {
 	db := setupTestDB(t)
 	repo := mongo.NewCounterRepository(db)
 
-	ctx := context.Background()
-
-	seq1, _ := repo.GetNextSequence(ctx, "order_number")
-	seq2, _ := repo.GetNextSequence(ctx, "order_number")
-	seq3, _ := repo.GetNextSequence(ctx, "order_number")
+	seq1, _ := repo.GetNextSequence("order_number")
+	seq2, _ := repo.GetNextSequence("order_number")
+	seq3, _ := repo.GetNextSequence("order_number")
 
 	assert.Equal(t, int64(1), seq1)
 	assert.Equal(t, int64(2), seq2)
@@ -40,12 +35,10 @@ func TestCounterRepository_GetCurrentSequence(t *testing.T) {
 	db := setupTestDB(t)
 	repo := mongo.NewCounterRepository(db)
 
-	ctx := context.Background()
+	_, _ = repo.GetNextSequence("order_number")
+	_, _ = repo.GetNextSequence("order_number")
 
-	_, _ = repo.GetNextSequence(ctx, "order_number")
-	_, _ = repo.GetNextSequence(ctx, "order_number")
-
-	current, err := repo.GetCurrentSequence(ctx, "order_number")
+	current, err := repo.GetCurrentSequence("order_number")
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), current)
@@ -55,9 +48,7 @@ func TestCounterRepository_GetCurrentSequence_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	repo := mongo.NewCounterRepository(db)
 
-	ctx := context.Background()
-
-	current, err := repo.GetCurrentSequence(ctx, "unknown_counter")
+	current, err := repo.GetCurrentSequence( "unknown_counter")
 
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), current)
@@ -67,14 +58,14 @@ func TestCounterRepository_ConcurrentAccess(t *testing.T) {
 	db := setupTestDB(t)
 	repo := mongo.NewCounterRepository(db)
 
-	ctx := context.Background()
+	
 
 	total := 10
 	results := make(chan int64, total)
 
 	for i := 0; i < total; i++ {
 		go func() {
-			seq, _ := repo.GetNextSequence(ctx, "order_number")
+			seq, _ := repo.GetNextSequence("order_number")
 			results <- seq
 		}()
 	}
