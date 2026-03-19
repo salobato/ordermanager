@@ -55,6 +55,7 @@ GET /health
 ### Testes
 
 * Testify (assert + mock)
+* Test-containers (para o teste de integração do RabbitMQ)
 
 ### Infraestrutura
 
