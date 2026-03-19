@@ -16,7 +16,7 @@ func TestPlaceOrder_WithTestify(t *testing.T) {
 	counterRepo := new(MockCounterRepository)
 	publisher := new(MockEventPublisher)
 
-	counterRepo.On("GetNextSequence").Return(int64(1), nil)
+	counterRepo.On("GetNextSequence", "order_number").Return(int64(1), nil)
 
 	repo.On("Save", mock.MatchedBy(func(order *entity.Order) bool {
 		return order.CustomerID == "customer_id" &&
@@ -85,7 +85,7 @@ func TestPlaceOrder_InvalidInput(t *testing.T) {
 
 			assert.Error(t, err)
 			assert.Nil(t, order)
-			counterRepo.AssertNotCalled(t, "GetNextSequence")
+			counterRepo.AssertNotCalled(t, "GetNextSequence", mock.Anything)
 			repo.AssertNotCalled(t, "Save", mock.Anything)
 			publisher.AssertNotCalled(t, "PublishOrderStatusChanged", mock.Anything)
 		})
@@ -97,7 +97,7 @@ func TestPlaceOrder_SequenceError(t *testing.T) {
 	counterRepo := new(MockCounterRepository)
 	publisher := new(MockEventPublisher)
 
-	counterRepo.On("GetNextSequence").Return(int64(0), errors.New("Erro ao gerar sequência"))
+	counterRepo.On("GetNextSequence", "order_number").Return(int64(0), errors.New("Erro ao gerar sequência"))
 
 	input := usecase.PlaceOrderInput{
 		CustomerID: "customer_id",
@@ -118,7 +118,7 @@ func TestPlaceOrder_RepositoryError(t *testing.T) {
 	counterRepo := new(MockCounterRepository)
 	publisher := new(MockEventPublisher)
 
-	counterRepo.On("GetNextSequence").Return(int64(1), nil)
+	counterRepo.On("GetNextSequence", "order_number").Return(int64(1), nil)
 	repo.On("Save", mock.Anything).
 		Return((*entity.Order)(nil), errors.New("Erro no banco de dados"))
 
