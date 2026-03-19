@@ -43,6 +43,7 @@ GET /health
 
 * Go 1.26.1 (Golang)
 * Gin (framework HTTP)
+* Log (Go stdlib)
 
 ### Banco de dados
 
@@ -70,7 +71,7 @@ GET /health
 * Atualizar status do pedido
 * Buscar pedido por ID
 * Publicação de eventos via RabbitMQ
-* Healthcheck com verificação de dependências
+* Healthcheck com verificação de dependências (MongoDB e RabbitMQ)
 
 ---
 
@@ -91,7 +92,7 @@ O projeto possui cobertura de testes em múltiplos níveis:
 ### Testes de integração
 
 * MongoDB (tabela de testes controlados que é gerada e apagada toda vez que a suíte de testes é executada)
-* RabbitMQ (publicação e consumo de mensagens)
+* RabbitMQ (publicação e consumo de mensagens com test-containers)
 
 ## Como executar a suíte de testes?
 
@@ -129,15 +130,18 @@ ok      github.com/salobato/ordermanager/internal/core/usecase  1.059s  coverage
 O projeto foi estruturado em camadas bem definidas:
 
 ```
+cmd/
 internal/
   core/
     entity/
     usecase/
     repository/
   adapter/
+    api/
     database/
     messaging/
-    http/
+pkg
+  config/
 ```
 
 **Motivação:**
@@ -211,7 +215,14 @@ Isso garante **consistência do domínio independentemente da origem da chamada*
 
 ---
 
-### 7. Ambiente isolado com Docker 🐳
+### 7. Logging com a biblioteca de logs padrão
+Todos os casos de uso principais receberam uma camada de log com a biblioteca padrão
+
+* Os logs trazem observabilidade para o sistema (qual caso de uso foi executado, quando iniciou, quando finalizou e qual o status)
+
+---
+
+### 8. Ambiente isolado com Docker 🐳
 
 Toda a stack roda via `docker-compose`, incluindo:
 
@@ -270,3 +281,9 @@ GET /orders/:id
 }
 
 ---
+
+## Próximos passos
+
+* Documentação com Swagger
+* GitHub Actions
+* Persistência de logs mais relevantes no MongoDB
