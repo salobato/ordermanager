@@ -9,6 +9,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/salobato/ordermanager/internal/adapter/messaging/rabbitmq"
 	"github.com/salobato/ordermanager/internal/core/entity"
+	"github.com/salobato/ordermanager/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,6 +28,33 @@ func (m *MockChannel) PublishWithContext(
 	return args.Error(0)
 }
 
+func setupRabbitMQ(t *testing.T) *amqp.Channel {
+	cfg := config.Load()
+	conn, err := amqp.Dial(cfg.RabbitMQURI)
+	if err != nil {
+		t.Fatalf("Erro ao conectar ao RabbitMQ: %v", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		t.Fatalf("Erro ao abrir channel: %v", err)
+	}
+
+	err = ch.ExchangeDeclare(
+		"orders.exchange",
+		"topic",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Erro ao declarar a exchange: %v", err)
+	}
+
+	return ch
+}
 func TestRabbitMQPublisher_Publish(t *testing.T) {
 	ch := new(MockChannel)
 
